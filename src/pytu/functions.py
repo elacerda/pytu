@@ -7,6 +7,9 @@ import numpy as np
 def PCA(arr, reduced=False, arr_mean=False, arr_std=False, sort=True):
     '''
     ARR array must have shape (measurements, variables)
+
+    If you are looking for PCA of spectra each wavelength is a variable.
+
     reduced = True:
         each var = (var - var.mean()) / var.std()
     '''
@@ -18,14 +21,15 @@ def PCA(arr, reduced=False, arr_mean=False, arr_std=False, sort=True):
     else:
         arr_mean__v = arrMean
     if not reduced:
-        deviance_mean__v = arr__mv - arr_mean__v
+        arr_std__v = None
+        deviance_mean__mv = arr__mv - arr_mean__v
     else:
         if not arr_std or not arr_std.any():
             arr_std__v = arr.std(axis=0)
         else:
             arr_std__v = arr_std
-        deviance_mean__v = np.asarray([diff / arr_std__v for diff in (arr__mv - arr_mean__v)])
-    covariance_matrix__vv = (deviance_mean__v.T).dot(deviance_mean__v) / (N_vars - 1)
+        deviance_mean__mv = np.asarray([diff / arr_std__v for diff in (arr__mv - arr_mean__v)])
+    covariance_matrix__vv = (deviance_mean__mv.T).dot(deviance_mean__mv) / (N_vars - 1)
     eigen_values__e, eigen_vectors__ve = eigh(covariance_matrix__vv)
     eigen_values_sorted__e = eigen_values__e
     eigen_vectors_sorted__ve = eigen_vectors__ve
@@ -33,8 +37,7 @@ def PCA(arr, reduced=False, arr_mean=False, arr_std=False, sort=True):
         S = np.argsort(eigen_values__e)[::-1]
         eigen_values_sorted__e = eigen_values__e[S]
         eigen_vectors_sorted__ve = eigen_vectors__ve[:, S]
-    return deviance_mean__v, arr_mean__v, arr_std__v, covariance_matrix__vv, eigen_values_sorted__e, eigVecS__ve
-
+    return deviance_mean__mv, arr_mean__v, arr_std__v, covariance_matrix__vv, eigen_values_sorted__e, eigen_vectors_sorted__ve
 
 def debug_var(debug_mode=False, **kwargs):
     pref = kwargs.pop('pref', '>>>')
