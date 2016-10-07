@@ -5,11 +5,12 @@ import numpy as np
 import argparse as ap
 import scipy.stats as st
 from scipy.ndimage.filters import gaussian_filter1d
+from .functions import calc_running_stats, debug_var, OLS_bisector
 
 
-class CustomArgumentParser(ap.ArgumentParser):
+class readFileArgumentParser(ap.ArgumentParser):
     def __init__(self, *args, **kwargs):
-        super(CustomArgumentParser, self).__init__(*args, **kwargs)
+        super(readFileArgumentParser, self).__init__(*args, **kwargs)
 
     def convert_arg_line_to_args(self, line):
         for arg in line.split():
@@ -20,7 +21,7 @@ class CustomArgumentParser(ap.ArgumentParser):
             yield arg
 
 
-class tupperware_none:
+class tupperware_none(object):
     def __init__(self):
         pass
 
@@ -29,7 +30,7 @@ class tupperware_none:
         return r
 
 
-class tupperware:
+class tupperware(object):
     pass
 
 

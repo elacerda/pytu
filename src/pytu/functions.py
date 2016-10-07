@@ -4,6 +4,120 @@
 import numpy as np
 
 
+def calc_running_stats(x, y, **kwargs):
+    '''
+    Statistics of x & y with a minimal (floor limit) number of points in x
+    Note: we have overlapping boxes.. so running stats..
+
+    XXX Lacerda@IAA - masked array mess with the method
+    '''
+
+    debug = kwargs.get('debug', False)
+    if isinstance(x, np.ma.core.MaskedArray) or isinstance(y, np.ma.core.MaskedArray):
+        xm, ym = ma_mask_xyz(x=x, y=y)
+        x = xm.compressed()
+        y = ym.compressed()
+    ind_xs = np.argsort(x)
+    xS = x[ind_xs]
+    nx = len(x)
+    frac = kwargs.get('frac', 0.1)
+    minimal_bin_points = kwargs.get('min_np', nx * frac)
+    i = 0
+    xbin = kwargs.get('xbin', [])
+    debug_var(debug, xbin=xbin)
+    if xbin == []:
+        xbin.append(xS[0])
+        min_next_i = int(np.ceil(minimal_bin_points))
+        next_i = min_next_i
+        while i < nx:
+            to_i = i + next_i
+            delta = (nx - to_i)
+            miss_frac = 1. * delta / nx
+            # print to_i, int(to_i), xS[to_i], xS[int(to_i)]
+            if to_i < nx:
+                if (xS[to_i] != xbin[-1]) and (miss_frac >= frac):
+                    xbin.append(xS[to_i])
+                    next_i = min_next_i
+                else:
+                    next_i += 1
+            else:
+                # last bin will be the xS.max()
+                to_i = nx
+                xbin.append(xS[-1])
+            i = to_i
+    # Def x-bins
+    xbin = np.asarray(xbin)
+    nxbin = len(xbin)
+    debug_var(debug,
+              minimal_bin_points=minimal_bin_points,
+              xbin=xbin,
+              n_xbin=nxbin)
+    # Reset in-bin stats arrays
+    xbinCenter_out = []
+    xbin_out = []
+    xMedian_out = []
+    xMean_out = []
+    xStd_out = []
+    yMedian_out = []
+    yMean_out = []
+    yStd_out = []
+    xPrc_out = []
+    yPrc_out = []
+    nInBin_out = []
+    ixBin = 0
+    while ixBin < (nxbin - 1):
+        left = xbin[ixBin]
+        xbin_out.append(left)
+        right = xbin[ixBin + 1]
+        isInBin = np.bitwise_and(np.greater_equal(x, left), np.less(x, right))
+        xx , yy = x[isInBin] , y[isInBin]
+        center = (right + left) / 2.
+        xbin_out.append(right)
+        xbinCenter_out.append(center)
+        Np = isInBin.astype(np.int).sum()
+        nInBin_out.append(Np)
+        if Np >= 2:
+            xMedian_out.append(np.median(xx))
+            xMean_out.append(xx.mean())
+            xStd_out.append(xx.std())
+            yMedian_out.append(np.median(yy))
+            yMean_out.append(yy.mean())
+            yStd_out.append(yy.std())
+            xPrc_out.append(np.percentile(xx, [5, 16, 84, 95]))
+            yPrc_out.append(np.percentile(yy, [5, 16, 84, 95]))
+        else:
+            if len(xMedian_out) > 0:
+                xMedian_out.append(xMedian_out[-1])
+                xMean_out.append(xMean_out[-1])
+                xStd_out.append(xStd_out[-1])
+                yMedian_out.append(yMedian_out[-1])
+                yMean_out.append(yMean_out[-1])
+                yStd_out.append(yStd_out[-1])
+            else:
+                xMedian_out.append(0.)
+                xMean_out.append(0.)
+                xStd_out.append(0.)
+                yMedian_out.append(0.)
+                yMean_out.append(0.)
+                yStd_out.append(0.)
+            if len(xPrc_out) > 0:
+                xPrc_out.append(xPrc_out[-1])
+                yPrc_out.append(xPrc_out[-1])
+            else:
+                xPrc_out.append(np.asarray([0., 0., 0., 0.]))
+                yPrc_out.append(np.asarray([0., 0., 0., 0.]))
+        ixBin += 1
+    debug_var(debug,
+              xbinCenter_out=np.array(xbinCenter_out),
+              xMedian_out=np.array(xMedian_out),
+              nInBin_out=nInBin_out,
+    )
+    return xbin, \
+        np.array(xbinCenter_out), np.array(xMedian_out), np.array(xMean_out), np.array(xStd_out), \
+        np.array(yMedian_out), np.array(yMean_out), np.array(yStd_out), np.array(nInBin_out), \
+        np.array(xPrc_out).T, np.array(yPrc_out).T
+
+
 def PCA(arr, reduced=False, arr_mean=False, arr_std=False, sort=True):
     '''
     ARR array must have shape (measurements, variables)
