@@ -223,7 +223,7 @@ def ma_mask_xyz(x, y=None, z=None, mask=None):
             m_z = np.bitwise_or(np.isnan(z), np.isinf(z))
             m = np.bitwise_or(m, m_z)
             if isinstance(z, np.ma.core.MaskedArray):
-                m = np.bitwise_or(m, y.mask)
+                m = np.bitwise_or(m, z.mask)
             xm = np.ma.masked_array(x, mask=m, dtype='float')
             ym = np.ma.masked_array(y, mask=m, dtype='float')
             zm = np.ma.masked_array(z, mask=m, dtype='float')
