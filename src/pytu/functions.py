@@ -4,6 +4,26 @@
 import numpy as np
 
 
+def send_gmail(sender='dhubax@gmail.com', receivers=[], message=None, login=None, password=None, password_file=None):
+    from smtplib import SMTP
+    from subprocess import PIPE, Popen
+    if login is None:
+        login = sender
+    if password is None:
+        if not (password_file is None):
+            o = Popen('cat %s' % password_file, shell=True, stdout=PIPE).stdout
+            password = o.read().strip()
+    try:
+        server = SMTP('smtp.gmail.com:587')
+        server.ehlo()
+        server.starttls()
+        server.login(login, password)
+        D = server.sendmail(sender, receivers, message)
+        print 'successfully sent the mail'
+        return D
+    except:
+        print "failed to send mail"
+
 def calc_running_stats(x, y, **kwargs):
     '''
     Statistics of x & y with a minimal (floor limit) number of points in x
