@@ -24,6 +24,7 @@ def send_gmail(sender='dhubax@gmail.com', receivers=[], message=None, login=None
     except:
         print "failed to send mail"
 
+
 def calc_running_stats(x, y, **kwargs):
     '''
     Statistics of x & y with a minimal (floor limit) number of points in x
@@ -53,7 +54,7 @@ def calc_running_stats(x, y, **kwargs):
             to_i = i + next_i
             delta = (nx - to_i)
             miss_frac = 1. * delta / nx
-            # print to_i, int(to_i), xS[to_i], xS[int(to_i)]
+            #print to_i, int(to_i), xS[to_i], xS[int(to_i)]
             if to_i < nx:
                 if (xS[to_i] != xbin[-1]) and (miss_frac >= frac):
                     xbin.append(xS[to_i])
@@ -61,7 +62,7 @@ def calc_running_stats(x, y, **kwargs):
                 else:
                     next_i += 1
             else:
-                # last bin will be the xS.max()
+                #### last bin will be the xS.max()
                 to_i = nx
                 xbin.append(xS[-1])
             i = to_i
@@ -69,9 +70,9 @@ def calc_running_stats(x, y, **kwargs):
     xbin = np.asarray(xbin)
     nxbin = len(xbin)
     debug_var(debug,
-              minimal_bin_points=minimal_bin_points,
-              xbin=xbin,
-              n_xbin=nxbin)
+              minimal_bin_points = minimal_bin_points,
+              xbin = xbin,
+              n_xbin = nxbin)
     # Reset in-bin stats arrays
     xbinCenter_out = []
     xbin_out = []
@@ -90,13 +91,29 @@ def calc_running_stats(x, y, **kwargs):
         xbin_out.append(left)
         right = xbin[ixBin + 1]
         isInBin = np.bitwise_and(np.greater_equal(x, left), np.less(x, right))
+        Np = isInBin.astype(np.int).sum()
+        nInBin_out.append(Np)
         xx , yy = x[isInBin] , y[isInBin]
+        # print ixBin, Np, xx, yy
         center = (right + left) / 2.
         xbin_out.append(right)
         xbinCenter_out.append(center)
-        Np = isInBin.astype(np.int).sum()
-        nInBin_out.append(Np)
-        if Np >= 2:
+        if Np == 1:
+            xMedian_out.append(np.median(xx))
+            xMean_out.append(xx.mean())
+            xStd_out.append(xx.std())
+            yMedian_out.append(np.median(yy))
+            yMean_out.append(yy.mean())
+            yStd_out.append(yy.std())
+            if len(xPrc_out) > 0:
+                xPrc_out.append(xPrc_out[-1])
+                yPrc_out.append(xPrc_out[-1])
+            else:
+                xPrc = np.median(xx)
+                yPrc = np.median(yy)
+                xPrc_out.append(np.asarray([xPrc, xPrc, xPrc, xPrc]))
+                yPrc_out.append(np.asarray([yPrc, yPrc, yPrc, yPrc]))
+        elif Np >= 2:
             xMedian_out.append(np.median(xx))
             xMean_out.append(xx.mean())
             xStd_out.append(xx.std())
@@ -127,10 +144,12 @@ def calc_running_stats(x, y, **kwargs):
                 xPrc_out.append(np.asarray([0., 0., 0., 0.]))
                 yPrc_out.append(np.asarray([0., 0., 0., 0.]))
         ixBin += 1
-    debug_var(debug,
-              xbinCenter_out=np.array(xbinCenter_out),
-              xMedian_out=np.array(xMedian_out),
-              nInBin_out=nInBin_out,
+    C.debug_var(
+        debug,
+        xbinCenter_out = np.array(xbinCenter_out),
+        xMedian_out = np.array(xMedian_out),
+        yMedian_out = np.array(yMedian_out),
+        nInBin_out = nInBin_out,
     )
     return xbin, \
         np.array(xbinCenter_out), np.array(xMedian_out), np.array(xMean_out), np.array(xStd_out), \
