@@ -194,6 +194,8 @@ def PCA(arr, reduced=False, arr_mean=False, arr_std=False, sort=True):
 
 def debug_var(debug_mode=False, **kwargs):
     pref = kwargs.pop('pref', '>>>')
+    verbose_level = kwargs.pop('verbose_level', 0)
+    pref = '\t' * verbose_level + pref
     if debug_mode:
         for kw, vw in kwargs.iteritems():
             if isinstance(vw, dict):
