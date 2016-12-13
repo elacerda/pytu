@@ -2,8 +2,122 @@
 # Lacerda@UFSC - 30/Ago/2016
 #
 import numpy as np
+from .lines import Lines
+from .functions import debug_var
 from matplotlib import pyplot as plt
-from .functions import find_confidence_interval, debug_var
+from .functions import find_confidence_interval
+
+
+def plotWHAN(ax, N2Ha, WHa, z=None, cmap='viridis', mask=None, labels=True, N=False, cb_label=r'R [HLR]', vmax=None, vmin=None, dcontour=True):
+    from .functions import ma_mask_xyz
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+    if mask is None:
+        mask = np.zeros_like(N2Ha, dtype=np.bool_)
+    extent = [-1.5, 0.5, -0.5, 3.]
+    if z is None:
+        bins = [30, 30]
+        xm, ym = ma_mask_xyz(N2Ha, np.ma.log10(WHa), mask=mask)
+        if dcontour:
+            density_contour(xm.compressed(), ym.compressed(), bins[0], bins[1], ax, range=[extent[0:2], extent[2:4]], colors=['b', 'y', 'r'])
+        sc = ax.scatter(xm, ym, marker='o', c='0.5', s=10, edgecolor='none', alpha=0.4)
+        ax.set_xlim(extent[0:2])
+        ax.set_ylim(extent[2:4])
+    else:
+        xm, ym, z = ma_mask_xyz(N2Ha, np.ma.log10(WHa), z, mask=mask)
+        sc = ax.scatter(xm, ym, c=z, cmap=cmap, vmin=vmin, vmax=vmax, marker='o', s=10, edgecolor='none')
+        ax.set_xlim(extent[0:   2])
+        ax.set_ylim(extent[2:4])
+        ax.set_aspect('equal', 'box')
+        the_divider = make_axes_locatable(ax)
+        color_axis = the_divider.append_axes('right', size='5%', pad=0)
+        cb = plt.colorbar(sc, cax=color_axis)
+        # cb = plt.colorbar(sc, ax=ax, ticks=[0, .5, 1, 1.5, 2, 2.5, 3], pad=0)
+        cb.set_label(cb_label)
+    if labels:
+        xlabel = r'$\log [NII]/H\alpha$'
+        ylabel = r'$\log WH\alpha$'
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
+    if not N:
+        N = xm.count()
+    c = ''
+    if (xm.compressed() < extent[0]).any():
+        c += 'x-'
+    if (xm.compressed() > extent[1]).any():
+        c += 'x+'
+    if (ym.compressed() < extent[2]).any():
+        c += 'y-'
+    if (ym.compressed() > extent[3]).any():
+        c += 'y+'
+    # plt.axis(extent)
+    plt.axis(extent)
+    plot_text_ax(ax, '%d %s' % (N, c), 0.01, 0.99, 20, 'top', 'left', 'k')
+    ax.plot((-0.4, -0.4), (np.log10(3), 3), 'k-')
+    ax.plot((-0.4, 0.5), np.ma.log10([6, 6]), 'k-')
+    ax.axhline(y=np.log10(3), c='k')
+    p = [np.log10(0.5/5.0), np.log10(0.5)]
+    xini = (np.log10(3.) - p[1]) / p[0]
+    ax.plot((xini, 0.), np.polyval(p, [xini, 0.]), 'k:')
+    ax.plot((0, 0.5), np.log10([0.5, 0.5]), 'k:')
+    ax.text(-1.4, 0.75, 'SF')
+    ax.text(0.07, 0.9, 'sAGN')
+    ax.text(0.05, 0.55, 'wAGN')
+    ax.text(0.25, 0.0, 'RG')
+    ax.text(-0.8, 0, 'PG')
+    return ax
+
+
+def plotBPT(ax, N2Ha, O3Hb, z=None, cmap='viridis', mask=None, labels=True, N=False, cb_label=r'R [HLR]', vmax=None, vmin=None, dcontour=True):
+    from .functions import ma_mask_xyz
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+    if mask is None:
+        mask = np.zeros_like(O3Hb, dtype=np.bool_)
+    extent = [-1.5, 1, -1.5, 1.5]
+    if z is None:
+        bins = [30, 30]
+        xm, ym = ma_mask_xyz(N2Ha, O3Hb, mask=mask)
+        if dcontour:
+            density_contour(xm.compressed(), ym.compressed(), bins[0], bins[1], ax, range=[extent[0:2], extent[2:4]], colors=['b', 'y', 'r'])
+        sc = ax.scatter(xm, ym, marker='o', c='0.5', s=10, edgecolor='none', alpha=0.4)
+        ax.set_xlim(extent[0:2])
+        ax.set_ylim(extent[2:4])
+    else:
+        xm, ym, z = ma_mask_xyz(N2Ha, O3Hb, z, mask=mask)
+        sc = ax.scatter(xm, ym, c=z, cmap=cmap, vmin=vmin, vmax=vmax, marker='o', s=10, edgecolor='none')
+        ax.set_xlim(extent[0:2])
+        ax.set_ylim(extent[2:4])
+        ax.set_aspect('equal', 'box')
+        the_divider = make_axes_locatable(ax)
+        color_axis = the_divider.append_axes('right', size='5%', pad=0)
+        cb = plt.colorbar(sc, cax=color_axis)
+        # cb = plt.colorbar(sc, ax=ax, ticks=[0, .5, 1, 1.5, 2, 2.5, 3], pad=0)
+        cb.set_label(cb_label)
+    if labels:
+        ax.set_xlabel(r'$\log\ [NII]/H\alpha$')
+        ax.set_ylabel(r'$\log\ [OIII]/H\beta$')
+    L = Lines()
+    if not N:
+        N = xm.count()
+    c = ''
+    if (xm.compressed() < extent[0]).any():
+        c += 'x-'
+    if (xm.compressed() > extent[1]).any():
+        c += 'x+'
+    if (ym.compressed() < extent[2]).any():
+        c += 'y-'
+    if (ym.compressed() > extent[3]).any():
+        c += 'y+'
+    plot_text_ax(ax, '%d %s' % (N, c), 0.01, 0.99, 20, 'top', 'left', 'k')
+    plot_text_ax(ax, 'S06', 0.30, 0.02, 20, 'bottom', 'left', 'k')
+    plot_text_ax(ax, 'K03', 0.53, 0.02, 20, 'bottom', 'left', 'k')
+    plot_text_ax(ax, 'K01', 0.85, 0.02, 20, 'bottom', 'right', 'k')
+    plot_text_ax(ax, 'CF10', 0.92, 0.98, 20, 'top', 'right', 'k', rotation=38)  # 44.62)
+    ax.plot(L.x['S06'], L.y['S06'], 'k-', label='S06')
+    ax.plot(L.x['K03'], L.y['K03'], 'k-', label='K03')
+    ax.plot(L.x['K01'], L.y['K01'], 'k-', label='K01')
+    ax.plot(L.x['CF10'], L.y['CF10'], 'k-', label='CF10')
+    L.fixCF10('S06')
+    return ax
 
 
 def add_subplot_axes(ax, rect, axisbg='w'):
@@ -25,7 +139,6 @@ def add_subplot_axes(ax, rect, axisbg='w'):
     y_labelsize *= rect[3] ** 0.5
     subax.xaxis.set_tick_params(labelsize=x_labelsize)
     subax.yaxis.set_tick_params(labelsize=y_labelsize)
-
     return subax
 
 
@@ -74,6 +187,7 @@ def plot_spearmanr_ax(ax, x, y, pos_x, pos_y, fontsize):
 
 
 def plot_OLSbisector_ax(ax, x, y, **kwargs):
+    from .functions import OLS_bisector
     pos_x = kwargs.get('pos_x', 0.99)
     pos_y = kwargs.get('pos_y', 0.00)
     fontsize = kwargs.get('fontsize', kwargs.get('fs', 10))
@@ -142,6 +256,7 @@ def plot_histo_ax(ax, x, **kwargs):
     va = kwargs.get('verticalalignment', kwargs.get('va', 'top'))
     ha = kwargs.get('verticalalignment', kwargs.get('ha', 'right'))
     fs = kwargs.get('fontsize', kwargs.get('fs', 14))
+    stats_txt = kwargs.get('stats_txt', True)
     pos_x = kwargs.get('pos_x', 0.98)
     y_v_space = kwargs.get('y_v_space', 0.08)
     ini_pos_y = kwargs.get('ini_pos_y', 0.96)
@@ -150,16 +265,17 @@ def plot_histo_ax(ax, x, **kwargs):
     c = kwargs.get('c', kwargs_histo.get('color', 'b'))
     ax.hist(x, **kwargs_histo)
     pos_y = [ini_pos_y - (i * y_v_space) for i in xrange(6)]
-    if first:
-        txt = [r'$N(x)$: %d' % len(x),
-               r'$<x>$: %.2f' % np.mean(x), r'med($x$): %.2f' % np.median(x),
-               r'$\sigma(x)$: %.2f' % np.std(x), r'max$(x)$: %.2f' % np.max(x),
-               r'min$(x)$: %.2f' % np.min(x)]
-    else:
-        txt = ['%d' % len(x), '%.2f' % np.mean(x), '%.2f' % np.median(x),
-               '%.2f' % np.std(x), '%.2f' % np.max(x), '%.2f' % np.min(x)]
-    for i, pos in enumerate(pos_y):
-        plot_text_ax(ax, txt[i], **dict(pos_x=pos_x, pos_y=pos, fs=fs, va=va, ha=ha, c=c))
+    if stats_txt:
+        if first:
+            txt = [r'$N(x)$: %d' % len(x),
+                   r'$<x>$: %.2f' % np.mean(x), r'med($x$): %.2f' % np.median(x),
+                   r'$\sigma(x)$: %.2f' % np.std(x), r'max$(x)$: %.2f' % np.max(x),
+                   r'min$(x)$: %.2f' % np.min(x)]
+        else:
+            txt = ['%d' % len(x), '%.2f' % np.mean(x), '%.2f' % np.median(x),
+                   '%.2f' % np.std(x), '%.2f' % np.max(x), '%.2f' % np.min(x)]
+        for i, pos in enumerate(pos_y):
+            plot_text_ax(ax, txt[i], **dict(pos_x=pos_x, pos_y=pos, fs=fs, va=va, ha=ha, c=c))
     return ax
 
 

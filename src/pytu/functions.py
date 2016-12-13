@@ -144,7 +144,7 @@ def calc_running_stats(x, y, **kwargs):
                 xPrc_out.append(np.asarray([0., 0., 0., 0.]))
                 yPrc_out.append(np.asarray([0., 0., 0., 0.]))
         ixBin += 1
-    C.debug_var(
+    debug_var(
         debug,
         xbinCenter_out = np.array(xbinCenter_out),
         xMedian_out = np.array(xMedian_out),
