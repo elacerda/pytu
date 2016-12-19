@@ -2,10 +2,51 @@
 # Lacerda@UFSC - 30/Ago/2016
 #
 import numpy as np
+import matplotlib as mpl
 from .lines import Lines
 from .functions import debug_var
 from matplotlib import pyplot as plt
 from .functions import find_confidence_interval
+
+
+def cmap_discrete(colors=[(1, 0, 0), (0, 1, 0), (0, 0, 1)], n_bins=3, cmap_name='myMap'):
+    cm = mpl.colors.LinearSegmentedColormap.from_list(cmap_name, colors, N=n_bins)
+    return cm
+
+def plot_scatter_histo(x, y, xlim, ylim, xbins=30, ybins=30, xlabel='', ylabel='',
+                       c=None, cmap=None, figure=None, axScatter=None, axHistx=None, axHisty=None,
+                       scatter=True, histo=True):
+    from matplotlib.ticker import NullFormatter
+    nullfmt = NullFormatter()  # no labels
+    if axScatter is None:
+        f = figure
+        left, width = 0.1, 0.65
+        bottom, height = 0.1, 0.65
+        bottom_h = left_h = left + width + 0.02
+        rect_scatter = [left, bottom, width, height]
+        rect_histx = [left, bottom_h, width, 0.2]
+        rect_histy = [left_h, bottom, 0.2, height]
+        axScatter = f.add_axes(rect_scatter)
+        axHistx = f.add_axes(rect_histx)
+        axHisty = f.add_axes(rect_histy)
+        axHistx.xaxis.set_major_formatter(nullfmt)  # no labels
+        axHisty.yaxis.set_major_formatter(nullfmt)  # no labels
+    if scatter:
+        if isinstance(x, list):
+            for X, Y, C in zip(x, y, c):
+                axScatter.scatter(X, Y, c=C, cmap=cmap, **dflt_kw_scatter)
+    axScatter.set_xlim(xlim)
+    axScatter.set_ylim(ylim)
+    axScatter.set_xlabel(xlabel)
+    axScatter.set_ylabel(ylabel)
+    if histo:
+        axHistx.hist(x, bins=xbins, range=xlim, color=c, histtype='barstacked')
+        axHisty.hist(y, bins=ybins, range=ylim, orientation='horizontal', color=c, histtype='barstacked')
+    plt.setp(axHisty.xaxis.get_majorticklabels(), rotation=270)
+    axHistx.set_xlim(axScatter.get_xlim())
+    axHisty.set_ylim(axScatter.get_ylim())
+    return axScatter, axHistx, axHisty
+
 
 
 def plotWHAN(ax, N2Ha, WHa, z=None, cmap='viridis', mask=None, labels=True, N=False, cb_label=r'R [HLR]', vmax=None, vmin=None, dcontour=True):
@@ -251,7 +292,21 @@ def plot_text_ax(ax, txt, xpos=0.99, ypos=0.01, fontsize=10, va='bottom', ha='ri
                 bbox=textbox, alpha=alpha, rotation=rot)
 
 
-def plot_histo_ax(ax, x, **kwargs):
+def plot_histo_stats_txt(x, first=False):
+    if first:
+        txt = [r'$N(x)$: %d' % len(x),
+               r'$<x>$: %.2f' % np.mean(x), r'med($x$): %.2f' % np.median(x),
+               r'$\sigma(x)$: %.2f' % np.std(x), r'max$(x)$: %.2f' % np.max(x),
+               r'min$(x)$: %.2f' % np.min(x)]
+        first = False
+    else:
+        txt = ['%d' % len(x), '%.2f' % np.mean(x), '%.2f' % np.median(x),
+               '%.2f' % np.std(x), '%.2f' % np.max(x), '%.2f' % np.min(x)]
+
+    return txt, first
+
+
+def plot_histo_ax(ax, x_dataset, **kwargs):
     first = kwargs.get('first', False)
     va = kwargs.get('verticalalignment', kwargs.get('va', 'top'))
     ha = kwargs.get('verticalalignment', kwargs.get('ha', 'right'))
@@ -263,19 +318,21 @@ def plot_histo_ax(ax, x, **kwargs):
     kwargs_histo = dict(bins=30, range=None, color='b', align='mid', alpha=0.6, histtype='bar', normed=False)
     kwargs_histo.update(kwargs.get('kwargs_histo', {}))
     c = kwargs.get('c', kwargs_histo.get('color', 'b'))
-    ax.hist(x, **kwargs_histo)
+    histo = kwargs.get('histo', True)
+    if histo:
+        ax.hist(x_dataset, **kwargs_histo)
     pos_y = [ini_pos_y - (i * y_v_space) for i in xrange(6)]
     if stats_txt:
-        if first:
-            txt = [r'$N(x)$: %d' % len(x),
-                   r'$<x>$: %.2f' % np.mean(x), r'med($x$): %.2f' % np.median(x),
-                   r'$\sigma(x)$: %.2f' % np.std(x), r'max$(x)$: %.2f' % np.max(x),
-                   r'min$(x)$: %.2f' % np.min(x)]
+        if isinstance(x_dataset, list):
+            for i, x in enumerate(x_dataset):
+                txt, first = plot_histo_stats_txt(x, first)
+                for j, pos in enumerate(pos_y):
+                    plot_text_ax(ax, txt[j], **dict(pos_x=pos_x, pos_y=pos, fs=fs, va=va, ha=ha, c=c[i]))
+                pos_x -= 0.1
         else:
-            txt = ['%d' % len(x), '%.2f' % np.mean(x), '%.2f' % np.median(x),
-                   '%.2f' % np.std(x), '%.2f' % np.max(x), '%.2f' % np.min(x)]
-        for i, pos in enumerate(pos_y):
-            plot_text_ax(ax, txt[i], **dict(pos_x=pos_x, pos_y=pos, fs=fs, va=va, ha=ha, c=c))
+            txt, first = plot_histo_stats_txt(x_dataset, first)
+            for i, pos in enumerate(pos_y):
+                plot_text_ax(ax, txt[i], **dict(pos_x=pos_x, pos_y=pos, fs=fs, va=va, ha=ha, c=c))
     return ax
 
 
