@@ -13,9 +13,10 @@ def cmap_discrete(colors=[(1, 0, 0), (0, 1, 0), (0, 0, 1)], n_bins=3, cmap_name=
     cm = mpl.colors.LinearSegmentedColormap.from_list(cmap_name, colors, N=n_bins)
     return cm
 
+
 def plot_scatter_histo(x, y, xlim, ylim, xbins=30, ybins=30, xlabel='', ylabel='',
                        c=None, cmap=None, figure=None, axScatter=None, axHistx=None, axHisty=None,
-                       scatter=True, histo=True):
+                       scatter=True, histo=True, s=1):
     from matplotlib.ticker import NullFormatter
     nullfmt = NullFormatter()  # no labels
     if axScatter is None:
@@ -34,7 +35,7 @@ def plot_scatter_histo(x, y, xlim, ylim, xbins=30, ybins=30, xlabel='', ylabel='
     if scatter:
         if isinstance(x, list):
             for X, Y, C in zip(x, y, c):
-                axScatter.scatter(X, Y, c=C, cmap=cmap, **dflt_kw_scatter)
+                axScatter.scatter(X, Y, c=C, s=s, cmap=cmap, marker='o', edgecolor='none')
     axScatter.set_xlim(xlim)
     axScatter.set_ylim(ylim)
     axScatter.set_xlabel(xlabel)
@@ -46,7 +47,6 @@ def plot_scatter_histo(x, y, xlim, ylim, xbins=30, ybins=30, xlabel='', ylabel='
     axHistx.set_xlim(axScatter.get_xlim())
     axHisty.set_ylim(axScatter.get_ylim())
     return axScatter, axHistx, axHisty
-
 
 
 def plotWHAN(ax, N2Ha, WHa, z=None, cmap='viridis', mask=None, labels=True, N=False, cb_label=r'R [HLR]', vmax=None, vmin=None, dcontour=True):
