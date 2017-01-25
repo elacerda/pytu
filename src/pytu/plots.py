@@ -9,6 +9,26 @@ from matplotlib import pyplot as plt
 from .functions import find_confidence_interval
 
 
+def stats_med12sigma(x, y, bin_edges, prc=True):
+    bin_center = []
+    yMean = []
+    prc_stats = []
+    npts = []
+    for i in range(len(bin_edges) - 1):
+        left = bin_edges[i]
+        right = bin_edges[i + 1]
+        bin_size = right - left
+        center = left + (bin_size)/2.
+        msk = np.bitwise_and(np.greater(x, left), np.less_equal(x, right))
+        if msk.astype(int).sum():
+            yMean.append(np.mean(y[msk]))
+            npts.append(len(y[msk]))
+            if prc:
+                prc_stats.append(np.percentile(y[msk], [5, 16, 50, 84, 95]))
+            bin_center.append(center)
+    return np.asarray(yMean), np.asarray(prc_stats).T, np.asarray(bin_center), np.asarray(npts)
+
+
 def cmap_discrete(colors=[(1, 0, 0), (0, 1, 0), (0, 0, 1)], n_bins=3, cmap_name='myMap'):
     cm = mpl.colors.LinearSegmentedColormap.from_list(cmap_name, colors, N=n_bins)
     return cm
@@ -16,7 +36,7 @@ def cmap_discrete(colors=[(1, 0, 0), (0, 1, 0), (0, 0, 1)], n_bins=3, cmap_name=
 
 def plot_scatter_histo(x, y, xlim, ylim, xbins=30, ybins=30, xlabel='', ylabel='',
                        c=None, cmap=None, figure=None, axScatter=None, axHistx=None, axHisty=None,
-                       scatter=True, histo=True, s=1):
+                       scatter=True, histo=True, s=1, histtype='barstacked'):
     from matplotlib.ticker import NullFormatter
     nullfmt = NullFormatter()  # no labels
     if axScatter is None:
@@ -36,13 +56,16 @@ def plot_scatter_histo(x, y, xlim, ylim, xbins=30, ybins=30, xlabel='', ylabel='
         if isinstance(x, list):
             for X, Y, C in zip(x, y, c):
                 axScatter.scatter(X, Y, c=C, s=s, cmap=cmap, marker='o', edgecolor='none')
+        else:
+            print 'alow'
+            axScatter.scatter(x, y, c=c, s=s, cmap=cmap, marker='o', edgecolor='none')
     axScatter.set_xlim(xlim)
     axScatter.set_ylim(ylim)
     axScatter.set_xlabel(xlabel)
     axScatter.set_ylabel(ylabel)
     if histo:
-        axHistx.hist(x, bins=xbins, range=xlim, color=c, histtype='barstacked')
-        axHisty.hist(y, bins=ybins, range=ylim, orientation='horizontal', color=c, histtype='barstacked')
+        axHistx.hist(x, bins=xbins, range=xlim, color=c, histtype=histtype)
+        axHisty.hist(y, bins=ybins, range=ylim, orientation='horizontal', color=c, histtype=histtype)
     plt.setp(axHisty.xaxis.get_majorticklabels(), rotation=270)
     axHistx.set_xlim(axScatter.get_xlim())
     axHisty.set_ylim(axScatter.get_ylim())
@@ -314,6 +337,7 @@ def plot_histo_ax(ax, x_dataset, **kwargs):
     stats_txt = kwargs.get('stats_txt', True)
     pos_x = kwargs.get('pos_x', 0.98)
     y_v_space = kwargs.get('y_v_space', 0.08)
+    y_h_space = kwargs.get('y_h_space', 0.1)
     ini_pos_y = kwargs.get('ini_pos_y', 0.96)
     kwargs_histo = dict(bins=30, range=None, color='b', align='mid', alpha=0.6, histtype='bar', normed=False)
     kwargs_histo.update(kwargs.get('kwargs_histo', {}))
@@ -328,7 +352,7 @@ def plot_histo_ax(ax, x_dataset, **kwargs):
                 txt, first = plot_histo_stats_txt(x, first)
                 for j, pos in enumerate(pos_y):
                     plot_text_ax(ax, txt[j], **dict(pos_x=pos_x, pos_y=pos, fs=fs, va=va, ha=ha, c=c[i]))
-                pos_x -= 0.1
+                pos_x -= y_h_space
         else:
             txt, first = plot_histo_stats_txt(x_dataset, first)
             for i, pos in enumerate(pos_y):
