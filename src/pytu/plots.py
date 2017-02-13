@@ -315,7 +315,7 @@ def plot_text_ax(ax, txt, xpos=0.99, ypos=0.01, fontsize=10, va='bottom', ha='ri
                 bbox=textbox, alpha=alpha, rotation=rot)
 
 
-def plot_histo_stats_txt(x, first=False):
+def plot_histo_stats_txt(x, first=False, dataset_name=None):
     if first:
         txt = [r'$N(x)$: %d' % len(x),
                r'$<x>$: %.2f' % np.mean(x), r'med($x$): %.2f' % np.median(x),
@@ -323,9 +323,13 @@ def plot_histo_stats_txt(x, first=False):
                r'min$(x)$: %.2f' % np.min(x)]
         first = False
     else:
-        txt = ['%d' % len(x), '%.2f' % np.mean(x), '%.2f' % np.median(x),
-               '%.2f' % np.std(x), '%.2f' % np.max(x), '%.2f' % np.min(x)]
-
+        if len(x) > 0:
+            txt = ['%d' % len(x), '%.2f' % np.mean(x), '%.2f' % np.median(x),
+                   '%.2f' % np.std(x), '%.2f' % np.max(x), '%.2f' % np.min(x)]
+        else:
+            txt = ['0', '0', '0', '0', '0', '0']
+    if dataset_name is not None:
+        txt.insert(0, dataset_name)
     return txt, first
 
 
@@ -343,18 +347,25 @@ def plot_histo_ax(ax, x_dataset, **kwargs):
     kwargs_histo.update(kwargs.get('kwargs_histo', {}))
     c = kwargs.get('c', kwargs_histo.get('color', 'b'))
     histo = kwargs.get('histo', True)
+    dataset_names = kwargs.get('dataset_names', None)
     if histo:
         ax.hist(x_dataset, **kwargs_histo)
-    pos_y = [ini_pos_y - (i * y_v_space) for i in xrange(6)]
     if stats_txt:
+        n_elem = 6
+        if dataset_names is not None:
+            n_elem += 1
+        pos_y = [ini_pos_y - (i * y_v_space) for i in xrange(n_elem)]
         if isinstance(x_dataset, list):
             for i, x in enumerate(x_dataset):
-                txt, first = plot_histo_stats_txt(x, first)
+                if dataset_names is None:
+                    txt, first = plot_histo_stats_txt(x, first)
+                else:
+                    txt, first = plot_histo_stats_txt(x, first, dataset_names[i])
                 for j, pos in enumerate(pos_y):
                     plot_text_ax(ax, txt[j], **dict(pos_x=pos_x, pos_y=pos, fs=fs, va=va, ha=ha, c=c[i]))
                 pos_x -= y_h_space
         else:
-            txt, first = plot_histo_stats_txt(x_dataset, first)
+            txt, first = plot_histo_stats_txt(x_dataset, first, dataset_names)
             for i, pos in enumerate(pos_y):
                 plot_text_ax(ax, txt[i], **dict(pos_x=pos_x, pos_y=pos, fs=fs, va=va, ha=ha, c=c))
     return ax
