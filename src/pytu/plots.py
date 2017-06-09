@@ -9,27 +9,37 @@ from matplotlib import pyplot as plt
 from .functions import find_confidence_interval
 
 
-def stats_med12sigma(x, y, bin_edges, prc=True):
-    bin_center = []
-    yMean = []
+def stats_med12sigma(x, y, bin_edges, prc=[5, 16, 50, 84, 95]):
+    bin_edges = np.array(bin_edges)
+    bin_center = (bin_edges[:-1] + bin_edges[1:]) / 2.0
+    N_R = len(bin_center)
+    yMean = np.ma.masked_all(bin_center.shape, dtype='float')
+    npts = np.zeros(bin_center.shape, dtype='int')
     prc_stats = []
-    npts = []
-    for i in range(len(bin_edges) - 1):
-        left = bin_edges[i]
-        right = bin_edges[i + 1]
-        bin_size = right - left
-        center = left + (bin_size)/2.
+    for iR in range(N_R):
+        left = bin_edges[iR]
+        right = bin_edges[iR + 1]
         msk = np.bitwise_and(np.greater(x, left), np.less_equal(x, right))
         if msk.astype(int).sum():
-            yMean.append(np.mean(y[msk]))
-            npts.append(len(y[msk]))
-            if prc:
-                prc_stats.append(np.percentile(y[msk], [5, 16, 50, 84, 95]))
-            bin_center.append(center)
-    return np.asarray(yMean), np.asarray(prc_stats).T, np.asarray(bin_center), np.asarray(npts)
+            yTmp = y[msk]
+            yMean[iR] = np.mean(yTmp)
+            npts[iR] = len(yTmp)
+            if prc is not None:
+                prc_stats.append(np.percentile(y[msk], prc))
+            else:
+                prc_stats.append(None)
+        else:
+            if prc is not None:
+                prc_stats.append([np.nan for i in range(len(prc))])
+            else:
+                prc_stats.append(None)
+        # print iR, prc_stats[-1], np.asarray(prc_stats).shape, np.asarray(prc_stats).T.shape
+    return yMean, np.asarray(prc_stats).T, bin_center, npts
 
 
-def cmap_discrete(colors=[(1, 0, 0), (0, 1, 0), (0, 0, 1)], n_bins=3, cmap_name='myMap'):
+def cmap_discrete(colors=[(1, 0, 0), (0, 1, 0), (0, 0, 1)], n_bins=None, cmap_name='myMap'):
+    if n_bins == None:
+        n_bins = len(colors)
     cm = mpl.colors.LinearSegmentedColormap.from_list(cmap_name, colors, N=n_bins)
     return cm
 
@@ -243,11 +253,14 @@ def density_contour(xdata, ydata, binsx, binsy, ax=None, levels_confidence=[0.68
     return contour
 
 
-def plot_spearmanr_ax(ax, x, y, pos_x, pos_y, fontsize):
+def plot_spearmanr_ax(ax, x, y, pos_x=0.01, pos_y=0.99, fontsize=10, verticalalignment='top', horizontalalignment='left', more_stats=False):
     from scipy.stats import spearmanr
     rhoSpearman, pvalSpearman = spearmanr(x, y)
-    txt = '<y/x>:%.3f - (y/x) median:%.3f - $\sigma(y/x)$:%.3f - Rs: %.2f' % (np.mean(y / x), np.ma.median((y / x)), np.ma.std(y / x), rhoSpearman)
-    plot_text_ax(ax, txt, pos_x, pos_y, fontsize, 'top', 'left')
+    if more_stats:
+        txt = '<y/x>:%.3f - (y/x) median:%.3f - $\sigma(y/x)$:%.3f - Rs: %.2f' % (np.mean(y / x), np.ma.median((y / x)), np.ma.std(y / x), rhoSpearman)
+    else:
+        txt = 'Rs: %.2f' % (rhoSpearman)
+    plot_text_ax(ax, txt, pos_x, pos_y, fontsize, verticalalignment, horizontalalignment)
 
 
 def plot_OLSbisector_ax(ax, x, y, **kwargs):
@@ -318,14 +331,14 @@ def plot_text_ax(ax, txt, xpos=0.99, ypos=0.01, fontsize=10, va='bottom', ha='ri
 def plot_histo_stats_txt(x, first=False, dataset_name=None):
     if first:
         txt = [r'$N(x)$: %d' % len(x),
-               r'$<x>$: %.2f' % np.mean(x), r'med($x$): %.2f' % np.median(x),
-               r'$\sigma(x)$: %.2f' % np.std(x), r'max$(x)$: %.2f' % np.max(x),
-               r'min$(x)$: %.2f' % np.min(x)]
+               r'$<x>$: %.3f' % np.mean(x), r'med($x$): %.3f' % np.median(x),
+               r'$\sigma(x)$: %.3f' % np.std(x), r'max$(x)$: %.3f' % np.max(x),
+               r'min$(x)$: %.3f' % np.min(x)]
         first = False
     else:
         if len(x) > 0:
-            txt = ['%d' % len(x), '%.2f' % np.mean(x), '%.2f' % np.median(x),
-                   '%.2f' % np.std(x), '%.2f' % np.max(x), '%.2f' % np.min(x)]
+            txt = ['%d' % len(x), '%.3f' % np.mean(x), '%.3f' % np.median(x),
+                   '%.3f' % np.std(x), '%.3f' % np.max(x), '%.3f' % np.min(x)]
         else:
             txt = ['0', '0', '0', '0', '0', '0']
     if dataset_name is not None:
@@ -348,26 +361,42 @@ def plot_histo_ax(ax, x_dataset, **kwargs):
     c = kwargs.get('c', kwargs_histo.get('color', 'b'))
     histo = kwargs.get('histo', True)
     dataset_names = kwargs.get('dataset_names', None)
+    return_text_list = kwargs.get('return_text_list', False)
+    return_histo_vars = kwargs.get('return_histo_vars', False)
+    text_list = []
     if histo:
-        ax.hist(x_dataset, **kwargs_histo)
-    if stats_txt:
-        n_elem = 6
-        if dataset_names is not None:
-            n_elem += 1
-        pos_y = [ini_pos_y - (i * y_v_space) for i in xrange(n_elem)]
-        if isinstance(x_dataset, list):
-            for i, x in enumerate(x_dataset):
-                if dataset_names is None:
-                    txt, first = plot_histo_stats_txt(x, first)
-                else:
-                    txt, first = plot_histo_stats_txt(x, first, dataset_names[i])
+        _n, _bins, _patches = ax.hist(x_dataset, **kwargs_histo)
+        # print _n, _n.shape
+        # print _bins, _bins.shape
+        # print (_bins[:-1] + _bins[1:])/2.
+    n_elem = 6
+    if dataset_names is not None:
+        n_elem += 1
+    pos_y = [ini_pos_y - (i * y_v_space) for i in xrange(n_elem)]
+    if isinstance(x_dataset, list):
+        for i, x in enumerate(x_dataset):
+            if dataset_names is None:
+                txt, first = plot_histo_stats_txt(x, first)
+            else:
+                txt, first = plot_histo_stats_txt(x, first, dataset_names[i])
+            text_list.append(txt)
+            if stats_txt:
                 for j, pos in enumerate(pos_y):
                     plot_text_ax(ax, txt[j], **dict(pos_x=pos_x, pos_y=pos, fs=fs, va=va, ha=ha, c=c[i]))
-                pos_x -= y_h_space
-        else:
-            txt, first = plot_histo_stats_txt(x_dataset, first, dataset_names)
+            pos_x -= y_h_space
+    else:
+        txt, first = plot_histo_stats_txt(x_dataset, first, dataset_names)
+        text_list.append(txt)
+        if stats_txt:
             for i, pos in enumerate(pos_y):
                 plot_text_ax(ax, txt[i], **dict(pos_x=pos_x, pos_y=pos, fs=fs, va=va, ha=ha, c=c))
+    if return_text_list:
+        if return_histo_vars:
+            return ax, text_list, _n, _bins, _patches
+        else:
+            return ax, text_list
+    if return_histo_vars:
+        return ax, _n, _bins, _patches
     return ax
 
 
