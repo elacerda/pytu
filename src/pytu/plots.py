@@ -77,8 +77,9 @@ def plot_scatter_histo(x, y, xlim, ylim, xbins=30, ybins=30, xlabel='', ylabel='
         axHistx.hist(x, bins=xbins, range=xlim, color=c, histtype=histtype)
         axHisty.hist(y, bins=ybins, range=ylim, orientation='horizontal', color=c, histtype=histtype)
     plt.setp(axHisty.xaxis.get_majorticklabels(), rotation=270)
-    axHistx.set_xlim(axScatter.get_xlim())
-    axHisty.set_ylim(axScatter.get_ylim())
+    axHistx.set_xlim(xlim)
+    axHisty.set_ylim(ylim)
+    # axHisty.set_xlim(axScatter.get_ylim())
     return axScatter, axHistx, axHisty
 
 

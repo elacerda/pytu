@@ -265,15 +265,15 @@ def ma_mask_xyz(x, y=None, z=None, mask=None):
             m = np.bitwise_or(m, m_z)
             if isinstance(z, np.ma.core.MaskedArray):
                 m = np.bitwise_or(m, z.mask)
-            xm = np.ma.masked_array(x, mask=m, dtype='float')
-            ym = np.ma.masked_array(y, mask=m, dtype='float')
-            zm = np.ma.masked_array(z, mask=m, dtype='float')
+            xm = np.ma.masked_array(x, mask=m, dtype='float', copy=True)
+            ym = np.ma.masked_array(y, mask=m, dtype='float', copy=True)
+            zm = np.ma.masked_array(z, mask=m, dtype='float', copy=True)
             return xm, ym, zm
         else:
-            xm = np.ma.masked_array(x, mask=m, dtype='float')
-            ym = np.ma.masked_array(y, mask=m, dtype='float')
+            xm = np.ma.masked_array(x, mask=m, dtype='float', copy=True)
+            ym = np.ma.masked_array(y, mask=m, dtype='float', copy=True)
             return xm, ym
-    xm = np.ma.masked_array(x, mask=m, dtype='float')
+    xm = np.ma.masked_array(x, mask=m, dtype='float', copy=True)
     return xm
 
 
