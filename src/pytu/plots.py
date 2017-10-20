@@ -60,15 +60,13 @@ def plot_scatter_histo(x, y, xlim, ylim, xbins=30, ybins=30, xlabel='', ylabel='
         axScatter = f.add_axes(rect_scatter)
         axHistx = f.add_axes(rect_histx)
         axHisty = f.add_axes(rect_histy)
-        axHistx.xaxis.set_major_formatter(nullfmt)  # no labels
-        axHisty.yaxis.set_major_formatter(nullfmt)  # no labels
     if scatter:
         if isinstance(x, list):
             for X, Y, C in zip(x, y, c):
-                axScatter.scatter(X, Y, c=C, s=s, cmap=cmap, marker='o', edgecolor='none')
+                axScatter.scatter(X, Y, rasterized=True, c=C, s=s, cmap=cmap, marker='o', edgecolor='none')
         else:
             print 'alow'
-            axScatter.scatter(x, y, c=c, s=s, cmap=cmap, marker='o', edgecolor='none')
+            axScatter.scatter(x, y, c=c, s=s, rasterized=True, cmap=cmap, marker='o', edgecolor='none')
     axScatter.set_xlim(xlim)
     axScatter.set_ylim(ylim)
     axScatter.set_xlabel(xlabel)
@@ -76,9 +74,11 @@ def plot_scatter_histo(x, y, xlim, ylim, xbins=30, ybins=30, xlabel='', ylabel='
     if histo:
         axHistx.hist(x, bins=xbins, range=xlim, color=c, histtype=histtype)
         axHisty.hist(y, bins=ybins, range=ylim, orientation='horizontal', color=c, histtype=histtype)
-    plt.setp(axHisty.xaxis.get_majorticklabels(), rotation=270)
-    axHistx.set_xlim(xlim)
-    axHisty.set_ylim(ylim)
+        axHistx.xaxis.set_major_formatter(nullfmt)  # no labels
+        axHisty.yaxis.set_major_formatter(nullfmt)  # no labels
+        plt.setp(axHisty.xaxis.get_majorticklabels(), rotation=270)
+        axHistx.set_xlim(xlim)
+        axHisty.set_ylim(ylim)
     # axHisty.set_xlim(axScatter.get_ylim())
     return axScatter, axHistx, axHisty
 
@@ -329,19 +329,23 @@ def plot_text_ax(ax, txt, xpos=0.99, ypos=0.01, fontsize=10, va='bottom', ha='ri
                 bbox=textbox, alpha=alpha, rotation=rot)
 
 
-def plot_histo_stats_txt(x, first=False, dataset_name=None):
+def plot_histo_stats_txt(x, first=False, dataset_name=None, range=None, use_range_stats=False):
+    if use_range_stats:
+        xm = np.ma.masked_array(x, mask=~((x >= range[0]) & (x <= range[1])))
+        x = xm.compressed()
     if first:
-        txt = [r'$N(x)$: %d' % len(x),
-               r'$<x>$: %.3f' % np.mean(x), r'med($x$): %.3f' % np.median(x),
-               r'$\sigma(x)$: %.3f' % np.std(x), r'max$(x)$: %.3f' % np.max(x),
-               r'min$(x)$: %.3f' % np.min(x)]
+        txt = [r'$N(x)$: %d' % len(x),]
+            #    r'$<x>$: %.3f' % np.mean(x), r'med($x$): %.3f' % np.median(x),
+            #    r'$\sigma(x)$: %.3f' % np.std(x), r'max$(x)$: %.3f' % np.max(x),
+            #    r'min$(x)$: %.3f' % np.min(x)]
         first = False
     else:
         if len(x) > 0:
-            txt = ['%d' % len(x), '%.3f' % np.mean(x), '%.3f' % np.median(x),
-                   '%.3f' % np.std(x), '%.3f' % np.max(x), '%.3f' % np.min(x)]
+            txt = ['%d' % len(x), ]
+                #    '%.3f' % np.mean(x), '%.3f' % np.median(x),
+                #    '%.3f' % np.std(x), '%.3f' % np.max(x), '%.3f' % np.min(x)]
         else:
-            txt = ['0', '0', '0', '0', '0', '0']
+            txt = ['0', ]  # '0', '0', '0', '0', '0']
     if dataset_name is not None:
         txt.insert(0, dataset_name)
     return txt, first
@@ -350,8 +354,8 @@ def plot_histo_stats_txt(x, first=False, dataset_name=None):
 def plot_histo_ax(ax, x_dataset, **kwargs):
     first = kwargs.get('first', False)
     va = kwargs.get('verticalalignment', kwargs.get('va', 'top'))
-    ha = kwargs.get('verticalalignment', kwargs.get('ha', 'right'))
-    fs = kwargs.get('fontsize', kwargs.get('fs', 14))
+    ha = kwargs.get('horizontalalignment', kwargs.get('ha', 'right'))
+    fs = kwargs.get('fontsize', kwargs.get('fs', 8))
     stats_txt = kwargs.get('stats_txt', True)
     pos_x = kwargs.get('pos_x', 0.98)
     y_v_space = kwargs.get('y_v_space', 0.08)
@@ -361,32 +365,30 @@ def plot_histo_ax(ax, x_dataset, **kwargs):
     kwargs_histo.update(kwargs.get('kwargs_histo', {}))
     c = kwargs.get('c', kwargs_histo.get('color', 'b'))
     histo = kwargs.get('histo', True)
+    use_range_stats = kwargs.get('use_range_stats', False)
     dataset_names = kwargs.get('dataset_names', None)
     return_text_list = kwargs.get('return_text_list', False)
     return_histo_vars = kwargs.get('return_histo_vars', False)
     text_list = []
     if histo:
         _n, _bins, _patches = ax.hist(x_dataset, **kwargs_histo)
-        # print _n, _n.shape
-        # print _bins, _bins.shape
-        # print (_bins[:-1] + _bins[1:])/2.
-    n_elem = 6
+    n_elem = 1
     if dataset_names is not None:
         n_elem += 1
     pos_y = [ini_pos_y - (i * y_v_space) for i in xrange(n_elem)]
     if isinstance(x_dataset, list):
         for i, x in enumerate(x_dataset):
             if dataset_names is None:
-                txt, first = plot_histo_stats_txt(x, first)
+                txt, first = plot_histo_stats_txt(x, first, use_range_stats=use_range_stats, range=kwargs_histo['range'])
             else:
-                txt, first = plot_histo_stats_txt(x, first, dataset_names[i])
+                txt, first = plot_histo_stats_txt(x, first, dataset_names[i], use_range_stats=use_range_stats, range=kwargs_histo['range'])
             text_list.append(txt)
             if stats_txt:
                 for j, pos in enumerate(pos_y):
                     plot_text_ax(ax, txt[j], **dict(pos_x=pos_x, pos_y=pos, fs=fs, va=va, ha=ha, c=c[i]))
             pos_x -= y_h_space
     else:
-        txt, first = plot_histo_stats_txt(x_dataset, first, dataset_names)
+        txt, first = plot_histo_stats_txt(x_dataset, first, dataset_names, use_range_stats=use_range_stats, range=kwargs_histo['range'])
         text_list.append(txt)
         if stats_txt:
             for i, pos in enumerate(pos_y):
