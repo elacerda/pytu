@@ -50,18 +50,35 @@ class Lines:
 
     def linesbpt_init(self, linename):
         x = {
-            'K01' : np.linspace(-10.0, 0.47, self.xn + 1),
-            'K03' : np.linspace(-10.0, 0.05, self.xn + 1),
-            'S06' : np.linspace(-10.0, -0.2, self.xn + 1)
+            'K01': np.linspace(-10.0, 0.47, self.xn + 1),
+            'K01_SII_Ha': np.linspace(-10.0, 0.32, self.xn + 1),
+            'K01_OI_Ha': np.linspace(-10.0, -0.59, self.xn + 1),
+            'K03': np.linspace(-10.0, 0.05, self.xn + 1),
+            'S06': np.linspace(-10.0, -0.2, self.xn + 1),
+            'CF10': np.linspace(-10.0, 10.0, self.xn + 1),
+            'K06_SII_Ha': np.linspace(-10.0, 10.0, self.xn + 1),
+            'K06_OI_Ha': np.linspace(-10.0, 10.0, self.xn + 1),
         }
 
+        # log([OIII]/Hb) = 1.19 + 0.61 / (log([SII]/Ha) - 0.47)
         self.addLine('K01', self.linebpt, (1.19, 0.61, -0.47), x['K01'][:-1])
+        # log([OIII]/Hb) = 1.3 + 0.72 / (log([SII]/Ha) - 0.32)
+        self.addLine('K01_SII_Ha', self.linebpt, (1.3, 0.72, -0.32), x['K01_SII_Ha'][:-1])
+        # log([OIII]/Hb) = 1.33 + 0.73 / (log([OI]/Ha) + 0.59)
+        self.addLine('K01_OI_Ha', self.linebpt, (1.33, 0.73, 0.59), x['K01_OI_Ha'][:-1])
+        # log([OIII]/Hb) = 1.3 + 0.61 / (log([SII]/Ha) - 0.05)
         self.addLine('K03', self.linebpt, (1.30, 0.61, -0.05), x['K03'][:-1])
+        # log([OIII]/Hb) = 0.96 + 0.29 / (log([SII]/Ha) + 0.2)
         self.addLine('S06', self.linebpt, (0.96, 0.29, 0.2), x['S06'][:-1])
-
-        x['CF10'] = np.linspace(-10.0, 10.0, self.xn)
+        # log([OIII]/Hb) = 1.01 log([SII]/Ha) + 0.48
         self.addLine('CF10', self.lline, (1.01, 0.48), x['CF10'])
-        self.fixCF10()
+        self.fixlline()
+        # log([OIII]/Hb) = 1.89 log([SII]/Ha) + 0.76
+        self.addLine('K06_SII_Ha', self.lline, (1.89, 0.76), x['K06_SII_Ha'])
+        self.fixlline(ltofix='K06_SII_Ha',linename='K01_SII_Ha')
+        # log([OIII]/Hb) = 1.18 log([OI]/Ha) + 1.3
+        self.addLine('K06_OI_Ha', self.lline, (1.18, 1.3), x['K06_OI_Ha'])
+        self.fixlline(ltofix='K06_OI_Ha',linename='K01_OI_Ha')
 
         '''
         Just a shortcut to BPT lines.
@@ -76,26 +93,29 @@ class Lines:
     def belowlinebpt(self, linename, x, y):
         if self.lines.__contains__(linename):
             mask = (y <= self.get_yfromx(linename, x))
-            if linename != 'CF10':
+            if linename != 'CF10' and linename != 'K06_SII_Ha' and linename != 'K06_OI_Ha':
                 c = self.consts[linename]
                 mask &= (x < -1.0*c[-1])
         return mask
 
-    def fixCF10(self, linename='S06'):
-        yCF10 = self.y['CF10']
-        yline = self.get_yfromx(linename, self.x['CF10'])
-        i = np.where(yCF10 > yline)[0][0]
-        xmin = self.x['CF10'][i]
+    def fixlline(self, ltofix='CF10', linename='S06'):
+        yltofix = self.y[ltofix]
+        consts = self.consts[ltofix]
+        yline = self.get_yfromx(linename, self.x[ltofix])
+        i = np.where(yltofix > yline)[0][0]
+        xmin = self.x[ltofix][i]
         newx = np.linspace(xmin, 2.0, self.xn)
-        self.remLine('CF10')
-        self.addLine('CF10', self.lline, (1.01, 0.48), newx)
+        self.remLine(ltofix)
+        self.addLine(ltofix, self.lline, consts, newx)
 
     @staticmethod
     def removable_init(self):
         self._removable = {
             'K01' : False,
+            'K01_SII_Ha': False,
+            'K01_OI_Ha': False,
             'K03' : False,
-            'CF10' : True,
+            'CF10' : False,
             'S06' : False
         }
 
