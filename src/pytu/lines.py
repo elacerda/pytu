@@ -29,7 +29,7 @@ x = np.linspace(-2.0, 2.0, 20)
 l.addLine('MyLineType', someFuncLine, const, x)
 '''
 class Lines:
-    def __init__(self, xn = 1000, create_BPT = True):
+    def __init__(self, xn=1000, create_BPT=True):
         self.xn = xn
         self.lines = []
         self.x = {}
@@ -66,11 +66,11 @@ class Lines:
         self.addLine('K01_SII_Ha', self.linebpt, (1.3, 0.72, -0.32), x['K01_SII_Ha'][:-1])
         # log([OIII]/Hb) = 1.33 + 0.73 / (log([OI]/Ha) + 0.59)
         self.addLine('K01_OI_Ha', self.linebpt, (1.33, 0.73, 0.59), x['K01_OI_Ha'][:-1])
-        # log([OIII]/Hb) = 1.3 + 0.61 / (log([SII]/Ha) - 0.05)
+        # log([OIII]/Hb) = 1.3 + 0.61 / (log([NII]/Ha) - 0.05)
         self.addLine('K03', self.linebpt, (1.30, 0.61, -0.05), x['K03'][:-1])
-        # log([OIII]/Hb) = 0.96 + 0.29 / (log([SII]/Ha) + 0.2)
+        # log([OIII]/Hb) = 0.96 + 0.29 / (log([NII]/Ha) + 0.2)
         self.addLine('S06', self.linebpt, (0.96, 0.29, 0.2), x['S06'][:-1])
-        # log([OIII]/Hb) = 1.01 log([SII]/Ha) + 0.48
+        # log([OIII]/Hb) = 1.01 log([NII]/Ha) + 0.48
         self.addLine('CF10', self.lline, (1.01, 0.48), x['CF10'])
         self.fixlline()
         # log([OIII]/Hb) = 1.89 log([SII]/Ha) + 0.76
@@ -79,6 +79,11 @@ class Lines:
         # log([OIII]/Hb) = 1.18 log([OI]/Ha) + 1.3
         self.addLine('K06_OI_Ha', self.lline, (1.18, 1.3), x['K06_OI_Ha'])
         self.fixlline(ltofix='K06_OI_Ha',linename='K01_OI_Ha')
+
+        self.sigma_clip_consts = {
+            'K01': (1.19-2*0.085, 0.61, -0.11*2-0.47),
+            'K01_SII_Ha': (1.3-2*0.085, 0.72, -0.09*2-0.32),
+        }
 
         '''
         Just a shortcut to BPT lines.
@@ -90,10 +95,10 @@ class Lines:
         '''
         self.removable_init(self)
 
-    def belowlinebpt(self, linename, x, y):
+    def belowlinebpt(self, linename, x, y, sigma_clip=False):
         if self.lines.__contains__(linename):
-            mask = (y <= self.get_yfromx(linename, x))
-            if linename != 'CF10' and linename != 'K06_SII_Ha' and linename != 'K06_OI_Ha':
+            mask = (y <= self.get_yfromx(linename, x, sigma_clip=sigma_clip))
+            if linename not in ['CF10', 'K06_SII_Ha', 'K06_OI_Ha']:
                 c = self.consts[linename]
                 mask &= (x < -1.0*c[-1])
         return mask
@@ -178,7 +183,10 @@ class Lines:
         return np.polyval(c, x)
         #return c[0] * x + c[1]
 
-    def get_yfromx(self, linename, x):
-        return self.methods[linename](self.consts[linename], np.array(x))
+    def get_yfromx(self, linename, x, sigma_clip=False):
+        consts = self.consts[linename]
+        if sigma_clip and (linename in self.sigma_clip_consts.keys()):
+            consts = self.sigma_clip_consts[linename]
+        return self.methods[linename](consts, np.array(x))
 
 # vim: set et ts=4 sw=4 sts=4 tw=80 fdm=marker:
