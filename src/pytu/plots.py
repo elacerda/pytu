@@ -88,7 +88,8 @@ def plotWHAN(ax, N2Ha, WHa, z=None, cmap='viridis', mask=None, labels=True, N=Fa
     from mpl_toolkits.axes_grid1 import make_axes_locatable
     if mask is None:
         mask = np.zeros_like(N2Ha, dtype=np.bool_)
-    extent = [-1.5, 0.5, -0.5, 3.]
+    extent = [-1.6, 0.8, -1, 2.5]
+    bottom, top, left, right = 0.18, 0.95, 0.08, 0.9
     if z is None:
         bins = [30, 30]
         xm, ym = ma_mask_xyz(N2Ha, np.ma.log10(WHa), mask=mask)
@@ -99,15 +100,22 @@ def plotWHAN(ax, N2Ha, WHa, z=None, cmap='viridis', mask=None, labels=True, N=Fa
         ax.set_ylim(extent[2:4])
     else:
         xm, ym, z = ma_mask_xyz(N2Ha, np.ma.log10(WHa), z, mask=mask)
-        sc = ax.scatter(xm, ym, c=z, cmap=cmap, vmin=vmin, vmax=vmax, marker='o', s=10, edgecolor='none')
-        ax.set_xlim(extent[0:   2])
+        #   print xm, ym, z
+        sc = ax.scatter(xm, ym, c=z, cmap=cmap, vmin=vmin, vmax=vmax, marker='o', s=1, edgecolor='none')
+        ax.set_xlim(extent[0:2])
         ax.set_ylim(extent[2:4])
-        ax.set_aspect('equal', 'box')
-        the_divider = make_axes_locatable(ax)
-        color_axis = the_divider.append_axes('right', size='5%', pad=0)
-        cb = plt.colorbar(sc, cax=color_axis)
-        # cb = plt.colorbar(sc, ax=ax, ticks=[0, .5, 1, 1.5, 2, 2.5, 3], pad=0)
-        cb.set_label(cb_label)
+        # ax.set_aspect('equal', 'box')
+        # the_divider = make_axes_locatable(ax)
+        # color_axis = the_divider.append_axes('right', size='5%', pad=0)
+        # cb = plt.colorbar(sc, cax=color_axis)
+        # # cb = plt.colorbar(sc, ax=ax, ticks=[0, .5, 1, 1.5, 2, 2.5, 3], pad=0)
+        # cb.set_label(cb_label)
+        cb_ax = f.add_axes([right, bottom, 0.02, top-bottom])
+        cb = plt.colorbar(sc, cax=cb_ax)
+        cb.set_label(r'$\log\ {\rm W}_{{\rm H}\alpha}$', fontsize=fs+4)
+        cb_ax.tick_params(direction='in')
+        cb.locator = MaxNLocator(4)
+        cb.update_ticks()
     if labels:
         xlabel = r'$\log [NII]/H\alpha$'
         ylabel = r'$\log WH\alpha$'
@@ -125,15 +133,15 @@ def plotWHAN(ax, N2Ha, WHa, z=None, cmap='viridis', mask=None, labels=True, N=Fa
     if (ym.compressed() > extent[3]).any():
         c += 'y+'
     # plt.axis(extent)
-    plt.axis(extent)
+    # plt.axis(extent)
     plot_text_ax(ax, '%d %s' % (N, c), 0.01, 0.99, 20, 'top', 'left', 'k')
     ax.plot((-0.4, -0.4), (np.log10(3), 3), 'k-')
-    ax.plot((-0.4, 0.5), np.ma.log10([6, 6]), 'k-')
+    ax.plot((-0.4, extent[1]), np.ma.log10([6, 6]), 'k-')
     ax.axhline(y=np.log10(3), c='k')
     p = [np.log10(0.5/5.0), np.log10(0.5)]
     xini = (np.log10(3.) - p[1]) / p[0]
     ax.plot((xini, 0.), np.polyval(p, [xini, 0.]), 'k:')
-    ax.plot((0, 0.5), np.log10([0.5, 0.5]), 'k:')
+    ax.plot((0, extent[1]), np.log10([0.5, 0.5]), 'k:')
     ax.text(-1.4, 0.75, 'SF')
     ax.text(0.07, 0.9, 'sAGN')
     ax.text(0.05, 0.55, 'wAGN')

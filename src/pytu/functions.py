@@ -4,6 +4,21 @@
 import numpy as np
 
 
+def pickle(filename, data):
+    import pickle
+
+    with open(filename, 'wb') as f:
+        pickle.dump(data, f, pickle.HIGHEST_PROTOCOL)
+
+
+def unpickle(filename):
+    import pickle
+
+    with open(filename, 'rb') as f:
+        data = pickle.load(f)
+    return data
+
+
 def send_gmail(sender='dhubax@gmail.com', receivers=[], message=None, login=None, password=None, password_file=None):
     from smtplib import SMTP
     from subprocess import PIPE, Popen
