@@ -1,4 +1,3 @@
-#!/usr/bin/python
 import numpy as np
 '''
 lines - the shape of the line function and the values used in the a,b and c
@@ -9,7 +8,7 @@ Usage:
 import lines
 
 l = lines.Lines()
-print l.lines
+print(l.lines)
 
 for t in l.lines:
     x = l.x[t]
@@ -134,9 +133,9 @@ class Lines:
                 del self.x[linename]
                 del self.y[linename]
             else:
-                print 'line %s is not removable' % linename
+                print('line %s is not removable' % linename)
         else:
-            print 'line %s doesn\'t exist' % linename
+            print('line %s doesn\'t exist' % linename)
 
     def addLine(self, linename, lfunc, lconst, x, removable = True):
         if not self.lines.__contains__(linename):
@@ -149,7 +148,7 @@ class Lines:
 
             self._removable[linename] = removable
         else:
-            print 'line %s exists, try another name' % linename
+            print('line %s exists, try another name' % linename)
 
     @staticmethod
     def addType(self, linename):

@@ -4,11 +4,14 @@
 import numpy as np
 
 
-def pickle(filename, data):
+def pickle(filename, data, protocol=None):
     import pickle
 
+    if protocol is None:
+        protocol = 2
+
     with open(filename, 'wb') as f:
-        pickle.dump(data, f, pickle.HIGHEST_PROTOCOL)
+        pickle.dump(data, f, protocol)
 
 
 def unpickle(filename):
@@ -34,10 +37,10 @@ def send_gmail(sender='dhubax@gmail.com', receivers=[], message=None, login=None
         server.starttls()
         server.login(login, password)
         D = server.sendmail(sender, receivers, message)
-        print 'successfully sent the mail'
+        print('successfully sent the mail')
         return D
     except:
-        print "failed to send mail"
+        print('failed to send mail')
 
 
 def calc_running_stats(x, y, **kwargs):
@@ -69,7 +72,7 @@ def calc_running_stats(x, y, **kwargs):
             to_i = i + next_i
             delta = (nx - to_i)
             miss_frac = 1. * delta / nx
-            #print to_i, int(to_i), xS[to_i], xS[int(to_i)]
+            #print(to_i, int(to_i), xS[to_i], xS[int(to_i)])
             if to_i < nx:
                 if (xS[to_i] != xbin[-1]) and (miss_frac >= frac):
                     xbin.append(xS[to_i])
@@ -109,7 +112,7 @@ def calc_running_stats(x, y, **kwargs):
         Np = isInBin.astype(np.int).sum()
         nInBin_out.append(Np)
         xx , yy = x[isInBin] , y[isInBin]
-        # print ixBin, Np, xx, yy
+        # print(ixBin, Np, xx, yy)
         center = (right + left) / 2.
         xbin_out.append(right)
         xbinCenter_out.append(center)
@@ -212,13 +215,13 @@ def debug_var(debug_mode=False, **kwargs):
     verbose_level = kwargs.pop('verbose_level', 0)
     pref = '\t' * verbose_level + pref
     if debug_mode:
-        for kw, vw in kwargs.iteritems():
+        for kw, vw in kwargs.items():
             if isinstance(vw, dict):
-                print '%s' % pref, kw
-                for k, v in vw.iteritems():
-                    print '\t%s' % pref, k, ':\t', v
+                print('%s') % pref, kw
+                for k, v in vw.items():
+                    print('\t%s' % pref, k, ':\t', v)
             else:
-                print '%s' % pref, '%s:\t' % kw, vw
+                print('%s' % pref, '%s:\t' % kw, vw)
 
 
 def find_confidence_interval(x, pdf, confidence_level):

@@ -112,7 +112,7 @@ class runstats(object):
         # self.xS = gaussian_filter1d(xM[~m_gs], self.sigma)
         xS = self.xMedian[~m_gs]
         yS = gaussian_filter1d(yM[~m_gs], self.sigma)
-        # print '>X>X>X>', len(self.xMedian[~m_gs]), len(self.xS)
+        # print('>X>X>X>', len(self.xMedian[~m_gs]), len(self.xS))
         if kwargs.get('gs_prc', None) is not None:
             for i in xrange(len(self.xPrc)):
                 xM = np.ma.masked_array(self.xPrc[i])

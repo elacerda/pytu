@@ -33,7 +33,7 @@ def stats_med12sigma(x, y, bin_edges, prc=[5, 16, 50, 84, 95]):
                 prc_stats.append([np.nan for i in range(len(prc))])
             else:
                 prc_stats.append(None)
-        # print iR, prc_stats[-1], np.asarray(prc_stats).shape, np.asarray(prc_stats).T.shape
+        # print(iR, prc_stats[-1], np.asarray(prc_stats).shape, np.asarray(prc_stats).T.shape)
     return yMean, np.asarray(prc_stats).T, bin_center, npts
 
 
@@ -65,7 +65,7 @@ def plot_scatter_histo(x, y, xlim, ylim, xbins=30, ybins=30, xlabel='', ylabel='
             for X, Y, C in zip(x, y, c):
                 axScatter.scatter(X, Y, rasterized=True, c=C, s=s, cmap=cmap, marker='o', edgecolor='none')
         else:
-            print 'alow'
+            print('alow')
             axScatter.scatter(x, y, c=c, s=s, rasterized=True, cmap=cmap, marker='o', edgecolor='none')
     axScatter.set_xlim(xlim)
     axScatter.set_ylim(ylim)
@@ -100,7 +100,7 @@ def plotWHAN(ax, N2Ha, WHa, z=None, cmap='viridis', mask=None, labels=True, N=Fa
         ax.set_ylim(extent[2:4])
     else:
         xm, ym, z = ma_mask_xyz(N2Ha, np.ma.log10(WHa), z, mask=mask)
-        #   print xm, ym, z
+        #   print(xm, ym, z)
         sc = ax.scatter(xm, ym, c=z, cmap=cmap, vmin=vmin, vmax=vmax, marker='o', s=1, edgecolor='none')
         ax.set_xlim(extent[0:2])
         ax.set_ylim(extent[2:4])
@@ -311,7 +311,7 @@ def plot_OLSbisector_ax(ax, x, y, **kwargs):
         txt_y = '%s (%.3f, %.3f, %.3f)' % (label, a, b, Yrms)
         plot_text_ax(ax, txt_y, pos_x, pos_y, fontsize, va, ha, color=color)
     else:
-        print txt_y
+        print(txt_y)
     return a, b, sigma_a, sigma_b
 
 
