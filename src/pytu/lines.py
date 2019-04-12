@@ -29,7 +29,7 @@ x = np.linspace(-2.0, 2.0, 20)
 l.addLine('MyLineType', someFuncLine, const, x)
 '''
 class Lines:
-    def __init__(self, xn=1000, create_BPT=True):
+    def __init__(self, xn=1000, create_BPT=True, sigma_clip=False):
         self.xn = xn
         self.lines = []
         self.x = {}
@@ -43,6 +43,7 @@ class Lines:
         you do.
         '''
         self._removable = {}
+        self.sigma_clip = sigma_clip
 
         if create_BPT is True:
             self.linesbpt = []
