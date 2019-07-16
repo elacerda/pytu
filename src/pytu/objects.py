@@ -114,7 +114,7 @@ class runstats(object):
         yS = gaussian_filter1d(yM[~m_gs], self.sigma)
         # print('>X>X>X>', len(self.xMedian[~m_gs]), len(self.xS))
         if kwargs.get('gs_prc', None) is not None:
-            for i in xrange(len(self.xPrc)):
+            for i in range(len(self.xPrc)):
                 xM = np.ma.masked_array(self.xPrc[i])
                 yM = np.ma.masked_array(self.yPrc[i])
                 m_gs = np.isnan(xM) | np.isnan(yM)
