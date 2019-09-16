@@ -37,19 +37,24 @@ class tupperware(object):
 class runstats(object):
     def __init__(self, x, y, **kwargs):
         self.x = x
+        self.x_orig = x
         self.y = y
+        self.y_orig = y
         self.xbin = None
+        self.automask = kwargs.get('automask', False)
         self.debug = kwargs.get('debug', False)
         self._gsmooth = kwargs.get('smooth', None)
         self.sigma = kwargs.get('sigma', None)
         self._tendency = kwargs.get('tendency', None)
+        if self.automask:
+            self.x, self.y = ma_mask_xyz(x, y)
+            self.x_orig = x
+            self.y_orig = y
         self.rstats(**kwargs)
         self.Rs, self.Rs_pval = st.spearmanr(x, y)
         self.Rp, self.Rp_pval = st.pearsonr(x, y)
-
         if kwargs.get('OLS', False):
             self.OLS_bisector()
-
         if kwargs.get('poly1d', False):
             self.poly1d()
 

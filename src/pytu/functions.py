@@ -43,6 +43,37 @@ def send_gmail(sender='dhubax@gmail.com', receivers=[], message=None, login=None
         print('failed to send mail')
 
 
+def create_equal_N_bins(x, frac=0.1, x_sorted=None, min_np=None):
+    xS = x_sorted
+    if xS is None:
+        ind_xs = np.argsort(x)
+        xS = x[ind_xs]
+    xbin = [xS[0]]
+    np = len(xS)
+    if min_np is None:
+        min_bin_pts = frac * np
+    i = 0
+    min_next_i = int(np.ceil(min_bin_pts))
+    next_i = min_next_i
+    while i < nx:
+        to_i = i + next_i
+        delta = (nx - to_i)
+        miss_frac = 1. * delta / nx
+        #print(to_i, int(to_i), xS[to_i], xS[int(to_i)])
+        if to_i < nx:
+            if (xS[to_i] != xbin[-1]) and (miss_frac >= frac):
+                xbin.append(xS[to_i])
+                next_i = min_next_i
+            else:
+                next_i += 1
+        else:
+            #### last bin will be the xS.max()
+            to_i = nx
+            xbin.append(xS[-1])
+        i = to_i
+    return np.asarray(xbin)
+
+
 def calc_running_stats(x, y, **kwargs):
     '''
     Statistics of x & y with a minimal (floor limit) number of points in x
@@ -59,108 +90,78 @@ def calc_running_stats(x, y, **kwargs):
     ind_xs = np.argsort(x)
     xS = x[ind_xs]
     nx = len(x)
-    frac = kwargs.get('frac', 0.1)
-    minimal_bin_points = kwargs.get('min_np', nx * frac)
     i = 0
     xbin = kwargs.get('xbin', [])
-    debug_var(debug, xbin=xbin)
     if xbin == []:
-        xbin.append(xS[0])
-        min_next_i = int(np.ceil(minimal_bin_points))
-        next_i = min_next_i
-        while i < nx:
-            to_i = i + next_i
-            delta = (nx - to_i)
-            miss_frac = 1. * delta / nx
-            #print(to_i, int(to_i), xS[to_i], xS[int(to_i)])
-            if to_i < nx:
-                if (xS[to_i] != xbin[-1]) and (miss_frac >= frac):
-                    xbin.append(xS[to_i])
-                    next_i = min_next_i
-                else:
-                    next_i += 1
-            else:
-                #### last bin will be the xS.max()
-                to_i = nx
-                xbin.append(xS[-1])
-            i = to_i
-    # Def x-bins
-    xbin = np.asarray(xbin)
+        x_bin = create_equal_np_bins(xsorted=xS,
+                                     frac=kwargs.get('frac', 0.1),
+                                     min_np=kwargs.get('min_np', None))
     nxbin = len(xbin)
-    debug_var(debug,
-              minimal_bin_points = minimal_bin_points,
-              xbin = xbin,
-              n_xbin = nxbin)
+    debug_var(debug, xbin=xbin, n_xbin=nxbin)
     # Reset in-bin stats arrays
-    xbinCenter_out = []
-    xbin_out = []
-    xMedian_out = []
-    xMean_out = []
-    xStd_out = []
-    yMedian_out = []
-    yMean_out = []
-    yStd_out = []
-    xPrc_out = []
-    yPrc_out = []
-    nInBin_out = []
+    xbinCenter_out, xbin_out, nInBin_out = [], [], []
+    xMedian_out, xMean_out, xStd_out, xPrc_out = [], [], [], []
+    yMedian_out, yMean_out, yStd_out, yPrc_out = [], [], [], []
     ixBin = 0
     while ixBin < (nxbin - 1):
         left = xbin[ixBin]
         xbin_out.append(left)
         right = xbin[ixBin + 1]
-        isInBin = np.bitwise_and(np.greater_equal(x, left), np.less(x, right))
-        Np = isInBin.astype(np.int).sum()
+        # isInBin = np.bitwise_and(np.greater_equal(x, left), np.less(x, right))
+        isInBin = (x >= left) & (x < right)
+        Np = isInBin.sum()
         nInBin_out.append(Np)
-        xx , yy = x[isInBin] , y[isInBin]
+        xx, yy = x[isInBin], y[isInBin]
         # print(ixBin, Np, xx, yy)
         center = (right + left) / 2.
         xbin_out.append(right)
         xbinCenter_out.append(center)
-        if Np == 1:
+        if Np > 0:
             xMedian_out.append(np.median(xx))
             xMean_out.append(xx.mean())
             xStd_out.append(xx.std())
             yMedian_out.append(np.median(yy))
             yMean_out.append(yy.mean())
             yStd_out.append(yy.std())
-            if len(xPrc_out) > 0:
-                xPrc_out.append(xPrc_out[-1])
-                yPrc_out.append(xPrc_out[-1])
-            else:
-                xPrc = np.median(xx)
-                yPrc = np.median(yy)
-                xPrc_out.append(np.asarray([xPrc, xPrc, xPrc, xPrc]))
-                yPrc_out.append(np.asarray([yPrc, yPrc, yPrc, yPrc]))
-        elif Np >= 2:
-            xMedian_out.append(np.median(xx))
-            xMean_out.append(xx.mean())
-            xStd_out.append(xx.std())
-            yMedian_out.append(np.median(yy))
-            yMean_out.append(yy.mean())
-            yStd_out.append(yy.std())
-            xPrc_out.append(np.percentile(xx, [5, 16, 84, 95]))
-            yPrc_out.append(np.percentile(yy, [5, 16, 84, 95]))
-        else:
-            if len(xMedian_out) > 0:
+            if Np > 1:
+                xPrc_out.append(np.percentile(xx, [5, 16, 84, 95]))
+                yPrc_out.append(np.percentile(yy, [5, 16, 84, 95]))
+            else:  # Np == 1
+                if len(xPrc_out) > 0:
+                    xPrc_out.append(xPrc_out[-1])
+                    yPrc_out.append(xPrc_out[-1])
+                else:
+                    xPrc = np.median(xx)
+                    yPrc = np.median(yy)
+                    xPrc_out.append(np.asarray([xPrc, xPrc, xPrc, xPrc]))
+                    yPrc_out.append(np.asarray([yPrc, yPrc, yPrc, yPrc]))
+        else:  # Np == 0
+            if len(xMedian_out) > 0:  # if there is some value, repeat it.
                 xMedian_out.append(xMedian_out[-1])
                 xMean_out.append(xMean_out[-1])
                 xStd_out.append(xStd_out[-1])
                 yMedian_out.append(yMedian_out[-1])
                 yMean_out.append(yMean_out[-1])
                 yStd_out.append(yStd_out[-1])
-            else:
-                xMedian_out.append(0.)
-                xMean_out.append(0.)
-                xStd_out.append(0.)
-                yMedian_out.append(0.)
-                yMean_out.append(0.)
-                yStd_out.append(0.)
+            else:  # This should be None
+                xMedian_out.append(np.nan)
+                xMean_out.append(np.nan)
+                xStd_out.append(np.nan)
+                yMedian_out.append(np.nan)
+                yMean_out.append(np.nan)
+                yStd_out.append(np.nan)
+                # xMedian_out.append(0.)
+                # xMean_out.append(0.)
+                # xStd_out.append(0.)
+                # yMedian_out.append(0.)
+                # yMean_out.append(0.)
+                # yStd_out.append(0.)
             if len(xPrc_out) > 0:
                 xPrc_out.append(xPrc_out[-1])
                 yPrc_out.append(xPrc_out[-1])
             else:
-                xPrc_out.append(np.asarray([0., 0., 0., 0.]))
-                yPrc_out.append(np.asarray([0., 0., 0., 0.]))
+                xPrc_out.append(np.asarray([np.nan, np.nan, np.nan, np.nan]))
+                yPrc_out.append(np.asarray([np.nan, np.nan, np.nan, np.nan]))
         ixBin += 1
     debug_var(
         debug,
@@ -169,6 +170,18 @@ def calc_running_stats(x, y, **kwargs):
         yMedian_out = np.array(yMedian_out),
         nInBin_out = nInBin_out,
     )
+    if kwargs.get('return_ma', False):
+        return xbin, \
+            np.ma.masked_array(xbinCenter_out, mask=np.isnan(xbinCenter_out)), \
+            np.ma.masked_array(xMedian_out, mask=np.isnan(xMedian_out)), \
+            np.ma.masked_array(xMean_out, mask=np.isnan(xMean_out)), \
+            np.ma.masked_array(xStd_out, mask=np.isnan(xStd_out)), \
+            np.ma.masked_array(yMedian_out, mask=np.isnan(yMedian_out)), \
+            np.ma.masked_array(yMean_out, mask=np.isnan(yMean_out)), \
+            np.ma.masked_array(yStd_out, mask=np.isnan(yStd_out)), \
+            np.ma.masked_array(nInBin_out, mask=np.isnan(nInBin_out)), \
+            np.ma.masked_array(xPrc_out, mask=np.isnan(xPrc_out)).T, \
+            np.ma.masked_array(yPrc_out, mask=np.isnan(yPrc_out)).T
     return xbin, \
         np.array(xbinCenter_out), np.array(xMedian_out), np.array(xMean_out), np.array(xStd_out), \
         np.array(yMedian_out), np.array(yMean_out), np.array(yStd_out), np.array(nInBin_out), \
@@ -209,6 +222,7 @@ def PCA(arr, reduced=False, arr_mean=False, arr_std=False, sort=True):
         eigen_values_sorted__e = eigen_values__e[S]
         eigen_vectors_sorted__ve = eigen_vectors__ve[:, S]
     return deviance_mean__mv, arr_mean__v, arr_std__v, covariance_matrix__vv, eigen_values_sorted__e, eigen_vectors_sorted__ve
+
 
 def debug_var(debug_mode=False, **kwargs):
     pref = kwargs.pop('pref', '>>>')
