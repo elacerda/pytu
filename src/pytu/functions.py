@@ -393,3 +393,79 @@ def calc_agebins(ages, age=None):
     if age is not None:
         age_index = np.where(aLow__t < age)[0][-1]
     return aCen__t, aLow__t, aUpp__t, age_index
+
+
+def analytic_linreg(x, y, dy, print_output=True):
+    sx = (x/dy**2).sum()
+    sx2 = (x**2/dy**2).sum()
+    s1 = (1./dy**2).sum()
+    sy = (y/dy**2).sum()
+    sxy = (x*y/dy**2).sum()
+    q = sx2*s1-sx**2
+    slope = (s1*sxy-sx*sy)/q
+    intercept = (sx2*sy-sx*sxy)/q
+    p = [slope, intercept]
+    e_slope = (s1/q)**0.5
+    e_intercept = (sx2/q)**0.5
+    ep = [e_slope, e_intercept]
+    sigma = (y - np.polyval(p, x)).std()
+    if print_output:
+        print(r's:{:.5f}+/-{:.5f} i:{:.5f}+/-{:.5f} stddev={:.5f}'.format(p[0], ep[0], p[1], ep[1], sigma))
+    return [slope, intercept], [e_slope, e_intercept], sigma
+
+
+def my_WLS(x, y, sy, ddof=1, return_all=True):
+    tmp = np.ones(x.size)
+    Nred = (x.size-ddof)
+    I = np.diag(tmp)
+    X = np.vstack([tmp, x]).T
+    W = np.diag(1/sy**2)
+    M = np.linalg.inv(X.T.dot(W).dot(X))
+    A = M.dot(X.T).dot(W).dot(y)
+    if return_all:
+        H = X.dot(M).dot(X.T).dot(W)
+        resids = (I - H).dot(y)
+        sigma = np.sqrt((resid**2).sum()/Nred)
+        rchisq = resid.T.dot(W).dot(resid)/Nred
+        return A, sigma, resids, rchisq
+    return A
+
+
+def my_ODR(x, y, sx, sy, beta0, model, return_output=False, print_output=True):
+    model = odr.Model(model)
+    first_guess = beta0
+    output = odr.ODR(odr.RealData(x, y, sx=ex, sy=ey), model, beta0=first_guess).run()
+    p, ep = output.beta.tolist(), output.sd_beta.tolist()
+    sigma_odr = ((output.delta**2 + output.eps**2)**.5).std(ddof=2)
+    sigma_y_odr = sigma_odr/(np.cos(np.arctan(p[0])))  # projection of the sigma_odr in the y_axis
+    if print_output:
+        print(r's:{:.5f}+/-{:.5f} i:{:.5f}+/-{:.5f} stddev_odr={:.5f} stddev_y={:.5f}'.format(p[0], ep[0], p[1], ep[1], sigma_odr, sigma_y_odr))
+    if return_output:
+        return p, ep, sigma_odr, sigma_y_odr, output
+    else:
+        return p, ep, sigma_odr, sigma_y_odr
+
+
+def ODR_MC(x, y, sx, sy, beta0):
+    p, _, _, _ = my_ODR(x, y, sx, sy, beta0, np.polyval, False, False)
+    return p
+
+
+def analytic_linreg_MC(x, y, sx, sy, beta0):
+    p, _, _ = analytic_linreg(x, y, ey, False)
+    return p
+
+
+def my_WLS_MC(x, y, sx, sy, beta0):
+    p = my_WLS(x, y, sy, ddof=2, return_all=False)
+    return p
+
+
+def linreg_MonteCarlo(func_linreg, x, y, sx, sy, p, tries=100, beta0=None):
+    _p = []
+    for i in range(tries):
+        xdist = np.random.normal(x, sx)
+        ydist = np.random.normal(np.polyval(p, x), sy)
+        _p.append(func_linreg(xdist, ydist, sx, sy, p))
+    _p = np.asarray(_p)
+    print(_p.mean(axis=0), _p.std(axis=0), _p.max(axis=0), _p.min(axis=0))
