@@ -46,40 +46,49 @@ def cmap_discrete(colors=[(1, 0, 0), (0, 1, 0), (0, 0, 1)], n_bins=None, cmap_na
 
 def plot_scatter_histo(x, y, xlim, ylim, xbins=30, ybins=30, xlabel='', ylabel='',
                        c=None, cmap=None, figure=None, axScatter=None, axHistx=None, axHisty=None,
-                       scatter=True, histo=True, s=1, histtype='barstacked'):
+                       scatter=True, histox=True, histoy=True, s=1, histtype='barstacked'):
     from matplotlib.ticker import NullFormatter
     nullfmt = NullFormatter()  # no labels
     if axScatter is None:
         f = figure
-        left, width = 0.1, 0.65
-        bottom, height = 0.1, 0.65
-        bottom_h = left_h = left + width + 0.02
+        left, width = 0.1, 0.8
+        # left, width = 0.1, 0.65
+        bottom, height = 0.1, 0.8
+        # bottom, height = 0.1, 0.65
+        if histox:
+            height = 0.65
+        if histoy:
+            width = 0.65
         rect_scatter = [left, bottom, width, height]
-        rect_histx = [left, bottom_h, width, 0.2]
-        rect_histy = [left_h, bottom, 0.2, height]
         axScatter = f.add_axes(rect_scatter)
-        axHistx = f.add_axes(rect_histx)
-        axHisty = f.add_axes(rect_histy)
+        if histox:
+            bottomx = bottom + height + 0.02
+            rect_histx = [left, bottomx, width, 0.2]
+            axHistx = f.add_axes(rect_histx)
+        if histoy:
+            lefty = left + width + 0.02
+            rect_histy = [lefty, bottom, 0.2, height]
+            axHisty = f.add_axes(rect_histy)
     if scatter:
         if isinstance(x, list):
             for X, Y, C in zip(x, y, c):
                 axScatter.scatter(X, Y, rasterized=True, c=C, s=s, cmap=cmap, marker='o', edgecolor='none')
         else:
-            print('alow')
             axScatter.scatter(x, y, c=c, s=s, rasterized=True, cmap=cmap, marker='o', edgecolor='none')
     axScatter.set_xlim(xlim)
     axScatter.set_ylim(ylim)
     axScatter.set_xlabel(xlabel)
     axScatter.set_ylabel(ylabel)
-    if histo:
+    if histox:
         axHistx.hist(x, bins=xbins, range=xlim, color=c, histtype=histtype)
-        axHisty.hist(y, bins=ybins, range=ylim, orientation='horizontal', color=c, histtype=histtype)
         axHistx.xaxis.set_major_formatter(nullfmt)  # no labels
+        axHistx.set_xlim(xlim)
+    if histoy:
+        axHisty.hist(y, bins=ybins, range=ylim, orientation='horizontal', color=c, histtype=histtype)
         axHisty.yaxis.set_major_formatter(nullfmt)  # no labels
         plt.setp(axHisty.xaxis.get_majorticklabels(), rotation=270)
-        axHistx.set_xlim(xlim)
         axHisty.set_ylim(ylim)
-    # axHisty.set_xlim(axScatter.get_ylim())
+        # axHisty.set_xlim(axScatter.get_ylim())
     return axScatter, axHistx, axHisty
 
 
@@ -224,7 +233,8 @@ def add_subplot_axes(ax, rect, facecolor='w'):
     subax.yaxis.set_tick_params(labelsize=y_labelsize)
     return subax
 
-
+# ex:
+# density_contour(xm.compressed(), ym.compressed(), binsx, binsy, ax, range=[extent[0:2], extent[2:4]], colors=['b', 'y', 'r'])
 def density_contour(xdata, ydata, binsx, binsy, ax=None, levels_confidence=[0.68, 0.95, 0.99], range=None, **contour_kwargs):
     """ Create a density contour plot.
     Parameters
@@ -255,7 +265,7 @@ def density_contour(xdata, ydata, binsx, binsy, ax=None, levels_confidence=[0.68
     X, Y = 0.5 * (xedges[1:] + xedges[:-1]), 0.5 * (yedges[1:] + yedges[:-1])
     Z = pdf.T
     if ax is None:
-        contour = plt.contour(X, Y, Z, levels=levels[::-1], origin="lower", **contour_kwargs)
+        contour = plt.tricontour(X, Y, Z, levels=levels[::-1], origin="lower", **contour_kwargs)
     else:
         # contour = ax.contour(X, Y, Z, levels=levels, origin="lower", **contour_kwargs)
         contour = ax.contour(X, Y, Z, levels=levels[::-1], origin="lower", **contour_kwargs)

@@ -1,33 +1,43 @@
 import numpy as np
-'''
-lines - the shape of the line function and the values used in the a,b and c
-constants can be find at Cid et al. (2010) - Alternative diagnostic diagramas
-and the 'forgotten' population of weak line galaxies in the SDSS.
 
-Usage:
-import lines
-
-l = lines.Lines()
-print(l.lines)
-
-for t in l.lines:
-    x = l.x[t]
-    y = l.y[t]
-
-    plot(x, y)
-
-if you want to add a line do it like this:
-def someFuncLine(c, x):
-    a = c[0]
-    b = c[1]
-    return a * x + b
-
-const = (1.0, 2.0)
-x = np.linspace(-2.0, 2.0, 20)
-
-l.addLine('MyLineType', someFuncLine, const, x)
-'''
 class Lines:
+    """
+    Lines - the shape of the line function and the values used in the a,b and c
+    constants can be find at Cid et al. (2010) - Alternative diagnostic diagramas
+    and the 'forgotten' population of weak line galaxies in the SDSS.
+
+    Attributes
+    ----------
+    xxx
+
+    Methods
+    -------
+    xxx
+
+    Example
+    -------
+    import lines
+
+    l = lines.Lines()
+    print(l.lines)
+
+    for t in l.lines:
+        x = l.x[t]
+        y = l.y[t]
+
+        plot(x, y)
+
+    if you want to add a line do it like this:
+    def someFuncLine(c, x):
+        a = c[0]
+        b = c[1]
+        return a * x + b
+
+    const = (1.0, 2.0)
+    x = np.linspace(-2.0, 2.0, 20)
+
+    l.addLine('MyLineType', someFuncLine, const, x)
+    """
     def __init__(self, xn=1000, create_BPT=True, sigma_clip=False):
         self.xn = xn
         self.lines = []
@@ -58,7 +68,10 @@ class Lines:
             'CF10': np.linspace(-10.0, 10.0, self.xn + 1),
             'K06_SII_Ha': np.linspace(-10.0, 10.0, self.xn + 1),
             'K06_OI_Ha': np.linspace(-10.0, 10.0, self.xn + 1),
+            'OII_OIII': np.linspace(-10, 0.92, self.xn + 1),
         }
+
+        self.addLine('OII_OIII', self.linebpt, (0.85, 0.11, -0.92), x['OII_OIII'][:-1])
 
         # log([OIII]/Hb) = 1.19 + 0.61 / (log([SII]/Ha) - 0.47)
         self.addLine('K01', self.linebpt, (1.19, 0.61, -0.47), x['K01'][:-1])
@@ -83,6 +96,7 @@ class Lines:
         self.sigma_clip_consts = {
             'K01': (1.19-2*0.085, 0.61, -0.11*2-0.47),
             'K01_SII_Ha': (1.3-2*0.085, 0.72, -0.09*2-0.32),
+            'OII_OIII': (0.85-2*0.085, 0.11, -0.09*2-0.3),
         }
 
         '''

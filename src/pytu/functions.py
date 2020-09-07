@@ -49,18 +49,18 @@ def create_equal_N_bins(x, frac=0.1, x_sorted=None, min_np=None):
         ind_xs = np.argsort(x)
         xS = x[ind_xs]
     xbin = [xS[0]]
-    np = len(xS)
+    N = len(xS)
     if min_np is None:
-        min_bin_pts = frac * np
+        min_np = frac * N
     i = 0
-    min_next_i = int(np.ceil(min_bin_pts))
+    min_next_i = int(np.ceil(min_np))
     next_i = min_next_i
-    while i < nx:
+    while i < N:
         to_i = i + next_i
-        delta = (nx - to_i)
-        miss_frac = 1. * delta / nx
+        delta = (N - to_i)
+        miss_frac = 1. * delta / N
         #print(to_i, int(to_i), xS[to_i], xS[int(to_i)])
-        if to_i < nx:
+        if to_i < N:
             if (xS[to_i] != xbin[-1]) and (miss_frac >= frac):
                 xbin.append(xS[to_i])
                 next_i = min_next_i
@@ -68,7 +68,7 @@ def create_equal_N_bins(x, frac=0.1, x_sorted=None, min_np=None):
                 next_i += 1
         else:
             #### last bin will be the xS.max()
-            to_i = nx
+            to_i = N
             xbin.append(xS[-1])
         i = to_i
     return np.asarray(xbin)
@@ -93,9 +93,9 @@ def calc_running_stats(x, y, **kwargs):
     i = 0
     xbin = kwargs.get('xbin', [])
     if xbin == []:
-        x_bin = create_equal_np_bins(xsorted=xS,
-                                     frac=kwargs.get('frac', 0.1),
-                                     min_np=kwargs.get('min_np', None))
+        xbin = create_equal_N_bins(x=x, x_sorted=xS,
+                                   frac=kwargs.get('frac', 0.1),
+                                   min_np=kwargs.get('min_np', None))
     nxbin = len(xbin)
     debug_var(debug, xbin=xbin, n_xbin=nxbin)
     # Reset in-bin stats arrays
